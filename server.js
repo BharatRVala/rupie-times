@@ -2,7 +2,7 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
-// const { Server } = require('socket.io');
+const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const path = require('path');
 
@@ -119,11 +119,28 @@ app.prepare().then(async () => {
         }
     });
 
-    // Socket.IO Removed for Pusher Migration
-    // const io = new Server(httpServer);
-    // global.io = io;
+    // Socket.IO for Real-time Support Chat
+    const { Server } = require('socket.io');
+    const io = new Server(httpServer, {
+        cors: {
+            origin: "*", // Adjust in production
+            methods: ["GET", "POST"]
+        }
+    });
+    global.io = io;
 
-    // io.on('connection', (socket) => { ... });
+    io.on('connection', (socket) => {
+        console.log('Client connected:', socket.id);
+
+        socket.on('join_ticket', (ticketId) => {
+            socket.join(`ticket-${ticketId}`);
+            console.log(`Socket ${socket.id} joined ticket-${ticketId}`);
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Client disconnected:', socket.id);
+        });
+    });
 
     httpServer.listen(port, (err) => {
         if (err) throw err;

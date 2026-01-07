@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/utils/dbConnect';
 import SupportTicket from '@/app/lib/models/SupportTicket';
 import { authenticateUser } from '@/app/lib/middleware/auth';
-import pusher from '@/app/lib/utils/pusher';
+
 
 export async function GET(request, { params }) {
     try {
@@ -130,10 +130,9 @@ export async function POST(request, { params }) {
             .populate('assignedTo', 'name email')
             .populate('messages.user', 'name email');
 
-        // Emit Pusher event for real-time message
-        try {
+        // Emit Socket.IO event for real-time message
+        if (global.io) {
             const lastMessage = updatedTicket.messages[updatedTicket.messages.length - 1];
-            // Serialize to clean JSON
             const cleanMessage = JSON.parse(JSON.stringify(lastMessage));
 
             const eventPayload = {
@@ -141,11 +140,7 @@ export async function POST(request, { params }) {
                 user: cleanMessage.user || { name: user.name, email: user.email }
             };
 
-            await pusher.trigger(`ticket-${id}`, 'receive_message', eventPayload);
-
-        } catch (pusherError) {
-            console.error('Pusher Trigger Error:', pusherError);
-            // Don't fail the request if real-time update fails, just log it
+            global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
         }
 
         return NextResponse.json({
