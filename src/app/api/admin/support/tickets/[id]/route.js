@@ -3,7 +3,7 @@ import connectDB from '@/app/lib/utils/dbConnect';
 import SupportTicket from '@/app/lib/models/SupportTicket';
 import User from '@/app/lib/models/User'; // Import User model
 import { authenticateAdmin } from '@/app/lib/middleware/auth';
-import pusher from '@/app/lib/utils/pusher';
+
 
 export async function GET(request, { params }) {
   try {
@@ -113,10 +113,9 @@ export async function POST(request, { params }) {
       .populate('assignedTo', 'name email')
       .populate('messages.user', 'name email');
 
-    // Emit Pusher event for real-time message
-    try {
+    // Emit Socket.IO event for real-time message
+    if (global.io) {
       const lastMessage = updatedTicket.messages[updatedTicket.messages.length - 1];
-      // Serialize to ensure ObjectIds are strings and structure is clean JSON
       const cleanMessage = JSON.parse(JSON.stringify(lastMessage));
 
       const eventPayload = {
@@ -124,9 +123,7 @@ export async function POST(request, { params }) {
         user: cleanMessage.user || { name: 'Admin', email: authResult.email }
       };
 
-      await pusher.trigger(`ticket-${id}`, 'receive_message', eventPayload);
-    } catch (pusherError) {
-      console.error('Pusher Trigger Error:', pusherError);
+      global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
     }
 
     return NextResponse.json({
@@ -179,11 +176,9 @@ export async function PUT(request, { params }) {
       authResult.email
     );
 
-    // Emit Pusher event for real-time update
-    try {
-      await pusher.trigger(`ticket-${id}`, 'status_changed', 'open');
-    } catch (pusherError) {
-      console.error('Pusher Trigger Error:', pusherError);
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      global.io.to(`ticket-${id}`).emit('status_changed', 'open');
     }
 
     // Add system message about assignment
@@ -277,11 +272,9 @@ export async function PATCH(request, { params }) {
 
     await ticket.save();
 
-    // Emit Pusher event for real-time update
-    try {
-      await pusher.trigger(`ticket-${id}`, 'status_changed', status);
-    } catch (pusherError) {
-      console.error('Pusher Trigger Error:', pusherError);
+    // Emit Socket.IO event for real-time update
+    if (global.io) {
+      global.io.to(`ticket-${id}`).emit('status_changed', status);
     }
 
     const updatedTicket = await SupportTicket.findById(id)

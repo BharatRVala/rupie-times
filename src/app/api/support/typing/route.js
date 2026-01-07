@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import pusher from '@/app/lib/utils/pusher';
+
 import { authenticateUser } from '@/app/lib/middleware/auth';
 
 export async function POST(request) {
@@ -17,12 +17,12 @@ export async function POST(request) {
         }
 
         // Trigger typing event
-        // Channel: ticket-{ticketId}
-        // Event: user_typing
-        await pusher.trigger(`ticket-${ticketId}`, 'user_typing', {
-            userId: user.id,
-            typing: typing
-        });
+        if (global.io) {
+            global.io.to(`ticket-${ticketId}`).emit('user_typing', {
+                userId: user.id,
+                typing: typing
+            });
+        }
 
         return NextResponse.json({ success: true });
 

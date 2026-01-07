@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
-import Pusher from 'pusher-js';
+import { io } from 'socket.io-client';
 import { HiPaperAirplane, HiPhotograph, HiX } from "react-icons/hi";
 
 export default function SupportChat({
@@ -33,19 +33,16 @@ export default function SupportChat({
     useEffect(() => {
         if (!ticket?._id) return;
 
-        // Initialize Pusher
-        if (!process.env.NEXT_PUBLIC_PUSHER_KEY) {
-            console.warn('⚠️ Pusher Key not found. Real-time features will be disabled.');
-            return;
-        }
+        // Initialize Socket.IO
+        const socket = io(); // Defaults to window.location.host
+        socketRef.current = socket;
 
-        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
-            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1',
+        socket.on('connect', () => {
+            console.log('Connected to socket');
+            socket.emit('join_ticket', ticket._id);
         });
 
-        const channel = pusher.subscribe(`ticket-${ticket._id}`);
-
-        channel.bind('receive_message', (newMessage) => {
+        socket.on('receive_message', (newMessage) => {
             setMessages((prev) => {
                 // Prevent duplicates
                 const exists = prev.some(m =>
@@ -55,43 +52,19 @@ export default function SupportChat({
                 if (exists) return prev;
                 return [...prev, newMessage];
             });
+            scrollToBottom(true);
         });
 
-        channel.bind('status_changed', (newStatus) => {
+        socket.on('status_changed', (newStatus) => {
             setCurrentStatus(newStatus);
         });
 
-        channel.bind('user_typing', (data) => {
-            // Typing indicator: check if it's the other party
-            // data.userId is the person typing
-            // If userType is 'user', we care if admin is typing.
-            // If userType is 'admin', we care if user is typing.
-
-            // Simple check: am I the one typing?
-            // We need to know "my" ID to filter out my own typing events if they come back
-            // For now, assuming API filters or we check against known ID if available.
-            // But here we rely on the component props or context.
-            // Let's assume the event data has userId.
-
-            // Just check if it matches the 'otherParty' logic or simpler:
-            // Since API sends userId, we can compare.
-            // But we don't have 'myUserId' easily available in props always?
-            // Actually, we do passing 'userType'.
-
-            // Simplified: The typing route sends { userId, typing }.
-            // If the UI receives it, show it.
-            // Ideally we filter out our own content.
-            // But for now, let's just show it if it's active.
+        socket.on('user_typing', (data) => {
             setIsTyping(data.typing);
         });
 
-        // Store for cleanup
-        socketRef.current = { pusher, channel };
-
         return () => {
-            channel.unbind_all();
-            channel.unsubscribe();
-            pusher.disconnect();
+            socket.disconnect();
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
     }, [ticket?._id]);
@@ -295,6 +268,7 @@ export default function SupportChat({
                 <div
                     ref={messagesContainerRef}
                     className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30"
+                    data-lenis-prevent
                 >
                     {messages.map((msg, index) => {
                         // Logic: Determine if message is from "me" or "them"
