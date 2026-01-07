@@ -95,6 +95,11 @@ const SOCIAL_ATTACHMENTS = [
 
 // Generic Helper Function to Replace Resend Logic
 export const sendEmail = async ({ to, subject, html, text, attachments, reply_to }) => {
+  // DEBUG LOGGING START
+  console.log(`📧 [DEBUG] Attempting to send email to: ${to}`);
+  console.log(`📧 [DEBUG] SMTP Config: Host=${process.env.SMTP_HOST}, Port=${process.env.SMTP_PORT}, Secure=${(Number(process.env.SMTP_PORT) || 587) === 465}, User=${process.env.SMTP_USER}`);
+  // DEBUG LOGGING END
+
   try {
     const info = await transporter.sendMail({
       from: `"${process.env.RESEND_FROM_NAME || 'Rupie Times'}" <${process.env.RESEND_FROM_EMAIL || process.env.SMTP_USER}>`,
@@ -109,10 +114,16 @@ export const sendEmail = async ({ to, subject, html, text, attachments, reply_to
       replyTo: reply_to
     });
 
-    // console.log("✅ Email sent:", info.messageId);
+    console.log("✅ [DEBUG] Email sent successfully:", info.messageId);
     return { success: true, data: { id: info.messageId } };
   } catch (error) {
-    console.error("❌ Nodemailer send error:", error);
+    console.error("❌ [DEBUG] Nodemailer send error DETAILS:", {
+      code: error.code,
+      message: error.message,
+      response: error.response,
+      command: error.command,
+      stack: error.stack
+    });
     return { success: false, error: error.message };
   }
 };
