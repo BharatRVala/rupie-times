@@ -590,25 +590,25 @@ export async function POST(req) {
     try {
       if (payment) {
         emailAttempted = true;
-        // console.log('📧 Attempting to send automatic invoice email to:', authResult.email);
 
-        // Pass the FULL payment object and original cartItems to ensure all data is present
-        // ✅ PASS EXPLICIT FINANCIAL DETAILS AND SUBSCRIPTION DETAILS
-        // ✅ PASS FULL USER OBJECT (with mobile)
-        await sendInvoiceEmail(payment, user, cartItems, {
+        // 🔥 FIRE AND FORGET: Send email in background to prevent request timeout/hang
+        // We do NOT await this.
+        sendInvoiceEmail(payment, user, cartItems, {
           subtotal: calculatedTotalAmount,
           discountAmount: discountAmount,
-          subscriptionDetails: subscriptionDetails // ✅ Pass details with dates
-        });
-        emailSent = true;
-        // console.log('✅ Automatic invoice email sent successfully');
+          subscriptionDetails: subscriptionDetails
+        })
+          .then(() => console.log('✅ Automatic invoice email sent successfully'))
+          .catch(err => console.error('❌ AUTOMATIC INVOICE EMAIL FAILED (Background):', err));
+
+        // We mark as "queued" or similar for the response since we aren't waiting
+        emailSent = true; // Optimistic flag for UI feedback if needed, or clarify in response
       } else {
         console.warn('⚠️ No payment record found for email sending');
       }
-    } catch (error) { // ✅ FIXED: Changed variable name to avoid conflict
-      console.error('❌ AUTOMATIC INVOICE EMAIL FAILED:', error);
-      emailError = error.message; // ✅ FIXED: Use the caught error
-      // Log this failure for monitoring but don't fail the transaction
+    } catch (error) {
+      console.error('❌ Error initiating background email:', error);
+      // Non-blocking error
     }
 
     // 10. Commit transaction
