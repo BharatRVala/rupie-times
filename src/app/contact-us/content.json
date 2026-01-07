@@ -1,0 +1,100 @@
+{
+    "title": "We’d love to \nhear from you !",
+    "subtitle": "Whether you have a project in mind, want to collaborate, or just have a question, feel free to reach out. Our team is ready to help.",
+    "form": {
+        "fields": [
+            {
+                "name": "fullName",
+                "label": "Full Name",
+                "placeholder": "Enter Your Full Name",
+                "type": "text"
+            },
+            {
+                "name": "email",
+                "label": "Email Address",
+                "placeholder": "Enter Your Email Address",
+                "type": "email"
+            },
+            {
+                "name": "number",
+                "label": "Phone Number",
+                "placeholder": "Enter Your Phone Number",
+                "type": "tel"
+            },
+            {
+                "name": "subject",
+                "label": "Subject",
+                "placeholder": "Enter Your Subject",
+                "type": "text"
+            },
+            {
+                "name": "message",
+                "label": "Message",
+                "placeholder": "Write your messgae",
+                "type": "textarea"
+            }
+        ],
+        "submitButton": "Send"
+    },
+    "contactInfo": [
+        {
+            "title": "Our Office",
+            "details": [
+                "Rupie Times Media",
+                "Mumbai, India"
+            ],
+            "isBold": true
+        },
+        {
+            "title": "Working Hours",
+            "details": [
+                "Monday–Friday,",
+                "10:00–18:00 IST",
+                "(Newsroom Monitors Major Market Hours)."
+            ],
+            "isBold": true
+        },
+        {
+            "title": "Response Time",
+            "details": [
+                "We Aim To Reply Within 1–2 Business Days. If You Don’t Hear Back In 3 Days, Please Resend With “Follow-Up” In The Subject Line."
+            ],
+            "isBold": true
+        },
+        {
+            "title": "Editorial (Newsroom)",
+            "details": [
+                "For Story Ideas, Press Releases, Interviews, And Market Insights."
+            ],
+            "email": "editor@gmail.com"
+        },
+        {
+            "title": "Corrections & Feedback",
+            "details": [
+                "Spotted An Error? Please Include The Article Link, The Exact Line, And Your Suggested Correction."
+            ],
+            "email": "corrections@gmail.com"
+        },
+        {
+            "title": "Advertising & Partnerships",
+            "details": [
+                "For Media Buys, Brand Collaborations, Sponsorships, And Custom Content."
+            ],
+            "email": "ads@gmail.com"
+        },
+        {
+            "title": "Media & PR",
+            "details": [
+                "For Media Enquiries, Quotes, Speaker Requests, And Event Invitations."
+            ],
+            "email": "media@gmail.com"
+        },
+        {
+            "title": "Business & Operations",
+            "details": [
+                "Invoices, Vendor Onboarding, Accounts, And General Business Queries."
+            ],
+            "email": "ops@gmail.com"
+        }
+    ]
+}

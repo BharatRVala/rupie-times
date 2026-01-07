@@ -1,0 +1,77 @@
+{
+    "hero": {
+        "badge": "WE'RE HIRING",
+        "title": "Passionate about markets?\nWrite the next big story — with Rupie Times.",
+        "description": "At Rupie Times, we’re not just reporting the markets — we’re shaping how India understands them. We’re looking for people who are curious, analytical and love turning data into stories that matter."
+    },
+    "jobSection": {
+        "title": "Who We Hire",
+        "jobs": [
+            {
+                "id": "financial-writers-editors-1",
+                "title": "Financial Writers & Editors1",
+                "description": "who can decode numbers and news."
+            },
+            {
+                "id": "financial-writers-editors-2",
+                "title": "Financial Writers & Editors2",
+                "description": "who can decode numbers and news."
+            },
+            {
+                "id": "financial-writers-editors-3",
+                "title": "Financial Writers & Editors3",
+                "description": "who can decode numbers and news."
+            }
+        ],
+        "sidebar": {
+            "howToApply": {
+                "title": "How to Apply",
+                "text": "Send us your portfolio to",
+                "email": "careers@rupietimes.com"
+            }
+        }
+    },
+    "workCulture": {
+        "title": "Work Culture",
+        "description": "We’re an independent newsroom built on integrity, collaboration and clarity. Work with a team that values insight over noise and accuracy over speed. We operate hybrid — from our Mumbai base and remote contributors across India.",
+        "image": "/assets/careers.webp"
+    },
+    "applicationForm": {
+        "title": "Want to work with us?",
+        "subtitle": "Your next opportunity starts here. Submit your application below and become part of a team that strives for excellence.",
+        "fields": [
+            {
+                "name": "fullName",
+                "placeholder": "Enter Your Name",
+                "type": "text"
+            },
+            {
+                "name": "contactNumber",
+                "placeholder": "Enter Your Contact number",
+                "type": "tel"
+            },
+            {
+                "name": "email",
+                "placeholder": "Enter Your Email Address",
+                "type": "email"
+            },
+            {
+                "name": "position",
+                "placeholder": "Enter Your Position",
+                "type": "text",
+                "readOnly": true
+            },
+            {
+                "name": "message",
+                "placeholder": "Write your messgae",
+                "type": "textarea"
+            },
+            {
+                "name": "resume",
+                "placeholder": "Upload your resume or cv",
+                "type": "file"
+            }
+        ],
+        "submitButton": "Send"
+    }
+}
