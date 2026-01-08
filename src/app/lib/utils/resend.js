@@ -10,6 +10,9 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  // Force IPv4. Gmail/Docker often time out on IPv6 in some cloud environments.
+  // This fixes 'ETIMEDOUT' errors.
+  family: 4,
 });
 
 const BRAND_COLORS = {
