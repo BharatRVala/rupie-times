@@ -43,13 +43,9 @@ export default async function Page({ params }) {
     }
 
     try {
-        console.log(`[DEBUG] Page requesting article ID: ${id}`);
+
         const data = await getArticleByIdService({ id, user });
-        console.log(`[DEBUG] Service response for ID ${id}:`, {
-            success: data.success,
-            hasArticle: !!data.article,
-            error: data.error
-        });
+
 
         if (!data.success || !data.article) {
             console.error(`Article Fetch Failed for ID ${id}:`, data);
@@ -67,7 +63,7 @@ export default async function Page({ params }) {
 
         return <ArticleView article={data.article} userInfo={data.userInfo} readingProgress={data.readingProgress} />;
     } catch (error) {
-        console.error("[DEBUG] Error in Page:", error);
+        console.error("Error in Page:", error);
         notFound();
     }
 }

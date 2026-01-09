@@ -73,7 +73,7 @@ export default function SubscribedProducts({ data }) {
                     : `/user-dashboard/subscription/${product.id}/articles`}
                   className="block w-full text-center py-3 bg-[#C0934B] text-white font-semibold rounded-lg hover:bg-[#a37c3f] transition-colors mt-auto"
                 >
-                  View Articles
+                  Start Reading
                 </Link>
               </div>
             </div>

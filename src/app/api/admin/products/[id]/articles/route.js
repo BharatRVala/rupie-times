@@ -43,7 +43,7 @@ export async function GET(request, { params }) {
       'articles.isActive': 1,
       'articles.issueDate': 1,
       'articles.issueEndDate': 1,
-      'articles.isFreeTrial': 1,
+
       'articles.createdAt': 1,
       'articles._id': 1
     });
@@ -145,8 +145,7 @@ export async function POST(request, { params }) {
       sections = [],
       isActive = true,
       issueDate,
-      issueEndDate,
-      isFreeTrial = false
+      issueEndDate
     } = body;
 
     // Validate issue dates
@@ -203,7 +202,6 @@ export async function POST(request, { params }) {
       isActive,
       issueDate: issueDate ? new Date(issueDate) : undefined,
       issueEndDate: issueEndDate ? new Date(issueEndDate) : undefined,
-      isFreeTrial,
       createdAt: currentTime
       // ✅ EXPLICITLY EXCLUDE: publishDate, order, updatedAt
     };
@@ -263,7 +261,6 @@ export async function POST(request, { params }) {
       isActive: addedArticle.isActive,
       issueDate: addedArticle.issueDate,
       issueEndDate: addedArticle.issueEndDate,
-      isFreeTrial: addedArticle.isFreeTrial,
       createdAt: addedArticle.createdAt,
       ...(addedArticle.image && { image: addedArticle.image }),
       ...(addedArticle.sections && addedArticle.sections.length > 0 && { sections: addedArticle.sections })

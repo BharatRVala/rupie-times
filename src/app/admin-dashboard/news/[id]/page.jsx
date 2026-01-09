@@ -179,7 +179,7 @@ export default function NewsViewPage() {
             case 'editor':
                 return (
                     <div
-                        className="mb-6 rich-text-content"
+                        className="mb-6 rich-text-content w-full overflow-x-auto custom-scrollbar"
                         dangerouslySetInnerHTML={{ __html: block.content }}
                     />
                 );

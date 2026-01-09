@@ -22,7 +22,13 @@ export default function DisclaimerPage() {
               {section.title}
             </h2>
             <p className="text-black/80 leading-relaxed whitespace-pre-line text-[15px] lg:text-[16px] text-justify">
-              {section.content}
+              {section.content.split(/(\*[^*]+\*)/g).map((part, i) =>
+                part.startsWith("*") && part.endsWith("*") ? (
+                  <strong key={i}>{part.slice(1, -1)}</strong>
+                ) : (
+                  part
+                )
+              )}
             </p>
           </div>
         ))}

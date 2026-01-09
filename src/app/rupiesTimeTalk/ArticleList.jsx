@@ -171,7 +171,7 @@ const ArticleList = ({
             )}
 
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 relative">
-                <h2 className="text-3xl font-bold text-[#1E4032] self-start md:self-auto">{pageTitle || "Rupie Times Talk"}</h2>
+                <h2 className="text-3xl font-bold text-[#1E4032] self-start md:self-auto">{pageTitle || "Rupie Speak: The voice of the Market."}</h2>
 
                 {/* Filter Component - Hide if in subscription context */}
                 {!filterContext && (

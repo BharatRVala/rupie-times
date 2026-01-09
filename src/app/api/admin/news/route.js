@@ -87,9 +87,20 @@ export async function POST(request) {
             return NextResponse.json({ success: false, error: 'Main heading and description are required' }, { status: 400 });
         }
 
-        // Handle isImportant exclusivity
+        // Handle isImportant logic (Max 4 active important news)
         if (isImportant) {
-            await News.updateMany({ isImportant: true }, { $set: { isImportant: false } });
+            const importantCount = await News.countDocuments({ isImportant: true });
+            
+            if (importantCount >= 4) {
+                // Find the oldest important news to unmark
+                const oldestImportant = await News.findOne({ isImportant: true })
+                    .sort({ createdAt: 1 })
+                    .select('_id');
+                
+                if (oldestImportant) {
+                    await News.findByIdAndUpdate(oldestImportant._id, { isImportant: false });
+                }
+            }
         }
 
         const newNews = new News({

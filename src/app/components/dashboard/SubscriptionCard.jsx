@@ -101,7 +101,7 @@ export default function SubscriptionCard({ subscription, onViewArticles }) {
               }
               className="flex-1 block text-center py-2.5 bg-[#C0934B] text-white text-sm font-bold rounded-lg hover:bg-[#a37c3f] transition-colors"
             >
-              View Articles
+              Start Reading
             </Link>
           )}
 

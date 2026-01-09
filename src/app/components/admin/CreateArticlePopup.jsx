@@ -11,7 +11,7 @@ export default function CreateArticlePopup({ isOpen, onClose, productName = "", 
         image: null,
         issueDate: '',
         issueEndDate: '',
-        isFreeTrial: false
+
     });
     const [selectedDuration, setSelectedDuration] = useState(""); // State for dropdown
     const [showCustomDate, setShowCustomDate] = useState(false);  // State to show manual inputs
@@ -29,7 +29,7 @@ export default function CreateArticlePopup({ isOpen, onClose, productName = "", 
             image: null,
             issueDate: '',
             issueEndDate: '',
-            isFreeTrial: false
+
         };
 
         if (initialData) {
@@ -40,7 +40,7 @@ export default function CreateArticlePopup({ isOpen, onClose, productName = "", 
                 image: initialData.coverImage || null,
                 issueDate: initialData.issueDate ? new Date(initialData.issueDate).toISOString().split('T')[0] : '',
                 issueEndDate: initialData.issueEndDate ? new Date(initialData.issueEndDate).toISOString().split('T')[0] : '',
-                isFreeTrial: initialData.isFreeTrial || false
+
             };
         }
 
@@ -305,25 +305,6 @@ export default function CreateArticlePopup({ isOpen, onClose, productName = "", 
                         )}
                     </div>
 
-                    {/* Enable Free Trial Access */}
-                    <div className="flex items-start gap-3 mt-1">
-                        <input
-                            type="checkbox"
-                            id="isFreeTrial"
-                            name="isFreeTrial"
-                            checked={formData.isFreeTrial}
-                            onChange={handleInputChange}
-                            className="mt-1 w-5 h-5 rounded border-gray-300 text-[#C0934B] focus:ring-[#C0934B] cursor-pointer"
-                        />
-                        <div className="flex flex-col">
-                            <label htmlFor="isFreeTrial" className="text-sm font-semibold text-[#1E4032] cursor-pointer select-none">
-                                Enable Free Trial Access
-                            </label>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                Check this to allow users to read this issue/product as part of the free trial.
-                            </p>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Footer Actions - Fixed Bottom */}

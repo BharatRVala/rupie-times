@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authenticateUser } from '@/app/lib/middleware/auth';
 // import { Resend } from 'resend';
-import { sendEmail } from '@/app/lib/utils/resend';
+import { sendEmail, generateEmailTemplate, SOCIAL_ATTACHMENTS } from '@/app/lib/utils/resend';
 import connectDB from '@/app/lib/utils/dbConnect';
 import Subscription from '@/app/lib/models/Subscription';
 import Product from '@/app/lib/models/product';
@@ -144,8 +144,7 @@ export async function POST(request, { params }) {
        </div>
     `;
 
-    // Import template generator
-    const { generateEmailTemplate } = require('@/app/lib/utils/resend');
+
 
     // Send email with PDF attachment
     const { data, error } = await sendEmail({
@@ -157,7 +156,8 @@ export async function POST(request, { params }) {
           filename: `Invoice_${orderData.orderId}.pdf`,
           content: pdfBuffer,
           contentType: 'application/pdf'
-        }
+        },
+        ...SOCIAL_ATTACHMENTS
       ]
     });
 

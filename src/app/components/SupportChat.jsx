@@ -33,12 +33,14 @@ export default function SupportChat({
     useEffect(() => {
         if (!ticket?._id) return;
 
-        // Initialize Socket.IO
-        const socket = io(); // Defaults to window.location.host
-        socketRef.current = socket;
+        // Initialize Socket.io
+        // Defaults to connecting to the same host/port serving the page
+        const socket = io({
+            path: '/socket.io', // Standard path
+        });
 
         socket.on('connect', () => {
-            console.log('Connected to socket');
+            // console.log('Connected to socket server');
             socket.emit('join_ticket', ticket._id);
         });
 
@@ -52,7 +54,6 @@ export default function SupportChat({
                 if (exists) return prev;
                 return [...prev, newMessage];
             });
-            scrollToBottom(true);
         });
 
         socket.on('status_changed', (newStatus) => {
@@ -60,10 +61,21 @@ export default function SupportChat({
         });
 
         socket.on('user_typing', (data) => {
+            // Check if others are typing
+            // We assume backend broadcasts to others in room, but we double check userId if possible
+            // For now, if we receive it and it's not us (logic can be refined if we had myUserId)
+            // But 'socket.to(...).emit' in server specifically excludes sender, so we don't need to filter!
             setIsTyping(data.typing);
         });
 
+        // Store for cleanup and access
+        socketRef.current = socket;
+
         return () => {
+            socket.off('connect');
+            socket.off('receive_message');
+            socket.off('status_changed');
+            socket.off('user_typing');
             socket.disconnect();
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
@@ -100,15 +112,11 @@ export default function SupportChat({
     // --- Logic Functions ---
 
     const handleTyping = () => {
-        if (!ticket?._id) return;
+        if (!ticket?._id || !socketRef.current) return;
 
-        // Use fetch to trigger typing event
         const triggerTyping = (isTyping) => {
-            fetch('/api/support/typing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticketId: ticket._id, typing: isTyping })
-            }).catch(err => console.error(err));
+            // Emit simple typing event
+            socketRef.current.emit('typing', { ticketId: ticket._id, typing: isTyping });
         };
 
         triggerTyping(true);
@@ -167,11 +175,7 @@ export default function SupportChat({
         try {
             // Stop typing indicator
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-            fetch('/api/support/typing', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ticketId: ticket._id, typing: false })
-            }).catch(err => console.error(err));
+            if (socketRef.current) socketRef.current.emit('typing', { ticketId: ticket._id, typing: false });
 
             // Call parent prop to save to DB
             const savedTicketData = await onSendMessage(msgText.trim(), attachments);
@@ -267,7 +271,7 @@ export default function SupportChat({
                 {/* Messages Area */}
                 <div
                     ref={messagesContainerRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30"
+                    className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/30 custom-scrollbar"
                     data-lenis-prevent
                 >
                     {messages.map((msg, index) => {

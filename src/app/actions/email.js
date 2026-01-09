@@ -1,50 +1,42 @@
 "use server";
 
-import nodemailer from "nodemailer";
+import { sendEmail as sendEmailUtility, generateEmailTemplate, SOCIAL_ATTACHMENTS } from "@/app/lib/utils/resend";
 
 export async function sendEmail(formData) {
-    const name = formData.get("fullName"); // Matching the form field name in ContactPage.jsx
+    const name = formData.get("fullName");
     const email = formData.get("email");
     const number = formData.get("number");
     const subject = formData.get("subject");
     const message = formData.get("message");
 
-    const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT),
-        secure: false, // true for 465, false for other ports
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-    });
+    const content = `
+      <h2 style="color: #00301F; margin-bottom: 20px;">New Contact Message</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${number || 'Not provided'}</p>
+      <p><strong>Subject:</strong> ${subject}</p>
+      <hr style="border-top: 1px solid #eee; margin: 20px 0;" />
+      <h3 style="color: #00301F;">Message:</h3>
+      <p style="white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 5px;">${message}</p>
+    `;
 
     try {
-        const mailOptions = {
-            from: process.env.SMTP_USER, // Sender address
-            to: process.env.SMTP_USER,   // List of receivers (sending to self/admin for now)
+        const result = await sendEmailUtility({
+            to: process.env.CONTACT_EMAIL || 'aghorimediahouse@gmail.com',
+            reply_to: email,
             subject: `New Contact Form Submission: ${subject || "No Subject"}`,
-            text: `
-        Name: ${name}
-        Email: ${email}
-        Number: ${number}
-        Message: ${message}
-      `,
-            html: `
-        <h3>New Contact Form Submission</h3>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Number:</strong> ${number}</p>
-        <p><strong>Subject:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message}</p>
-      `,
-        };
+            html: generateEmailTemplate(content),
+            attachments: SOCIAL_ATTACHMENTS
+        });
 
-        await transporter.sendMail(mailOptions);
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
         return { success: true };
     } catch (error) {
-        console.error("SMTP Error:", error);
+        console.error("Email Sending Error:", error);
         return { success: false, error: "Failed to send email." };
     }
 }
+

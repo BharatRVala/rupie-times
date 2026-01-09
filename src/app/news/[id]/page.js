@@ -3,21 +3,30 @@
 import React, { useState, useEffect } from 'react';
 import NewsDetailView from '../../components/NewsDetailView';
 import GlobalLoader from '../../components/GlobalLoader';
-import { notFound, useRouter, useParams } from 'next/navigation';
+import { notFound, useRouter, useParams, useSearchParams } from 'next/navigation';
 
 export default function NewsDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [newsItem, setNewsItem] = useState(null);
     const [allNews, setAllNews] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Fetch sidebar news only once
+    // Fetch sidebar news (refetch if category changes)
     useEffect(() => {
         const fetchSidebarNews = async () => {
             try {
-                const listResponse = await fetch('/api/user/news?limit=10');
+                const cat = searchParams.get('cat');
+                let url = '/api/user/news?limit=10';
+
+                if (cat && cat !== 'All') {
+                    url += `&category=${encodeURIComponent(cat)}`;
+                }
+
+                const listResponse = await fetch(url);
                 const listData = await listResponse.json();
 
                 if (listData.success) {
@@ -29,7 +38,7 @@ export default function NewsDetailPage() {
             }
         };
         fetchSidebarNews();
-    }, []);
+    }, [searchParams]);
 
     // Fetch specific news item on ID change
     useEffect(() => {
@@ -82,7 +91,9 @@ export default function NewsDetailPage() {
     }
 
     const handleSelectNews = (item) => {
-        router.push(`/news/${item._id || item.id}`);
+        const cat = searchParams.get('cat');
+        const url = `/news/${item._id || item.id}${cat ? `?cat=${encodeURIComponent(cat)}` : ''}`;
+        router.push(url);
     };
 
     if (loading) {

@@ -17,6 +17,8 @@ export async function POST(request) {
         }
 
         // Trigger typing event
+        // Channel: ticket-{ticketId}
+        // Event: user_typing
         if (global.io) {
             global.io.to(`ticket-${ticketId}`).emit('user_typing', {
                 userId: user.id,
@@ -27,7 +29,7 @@ export async function POST(request) {
         return NextResponse.json({ success: true });
 
     } catch (error) {
-        console.error('Pusher typing error:', error);
+        console.error('Socket typing error:', error);
         return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 });
     }
 }

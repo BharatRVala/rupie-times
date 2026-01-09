@@ -130,9 +130,10 @@ export async function POST(request, { params }) {
             .populate('assignedTo', 'name email')
             .populate('messages.user', 'name email');
 
-        // Emit Socket.IO event for real-time message
-        if (global.io) {
+        // Emit Socket.io event for real-time message
+        try {
             const lastMessage = updatedTicket.messages[updatedTicket.messages.length - 1];
+            // Serialize to clean JSON
             const cleanMessage = JSON.parse(JSON.stringify(lastMessage));
 
             const eventPayload = {
@@ -140,7 +141,13 @@ export async function POST(request, { params }) {
                 user: cleanMessage.user || { name: user.name, email: user.email }
             };
 
-            global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
+            if (global.io) {
+                global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
+            }
+
+        } catch (socketError) {
+            console.error('Socket Emit Error:', socketError);
+            // Don't fail the request if real-time update fails, just log it
         }
 
         return NextResponse.json({

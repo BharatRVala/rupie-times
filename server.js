@@ -10,7 +10,7 @@ const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
 const port = 3000;
 
-const app = next({ dev, hostname, port, dir: __dirname });
+const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
 // Function to load models
@@ -119,26 +119,37 @@ app.prepare().then(async () => {
         }
     });
 
-    // Socket.IO for Real-time Support Chat
-    const { Server } = require('socket.io');
+    // Initialize Socket.IO
     const io = new Server(httpServer, {
         cors: {
-            origin: "*", // Adjust in production
+            origin: "*", // Allow all origins for now
             methods: ["GET", "POST"]
         }
     });
+
+    // Store globally for API access
     global.io = io;
 
     io.on('connection', (socket) => {
-        console.log('Client connected:', socket.id);
+        // console.log('Socket connected:', socket.id);
 
         socket.on('join_ticket', (ticketId) => {
-            socket.join(`ticket-${ticketId}`);
-            console.log(`Socket ${socket.id} joined ticket-${ticketId}`);
+            // Join a room specific to this ticket
+            // Prefixing with 'ticket-' to match the logic used in API
+            const roomName = `ticket-${ticketId}`;
+            socket.join(roomName);
+            // console.log(`Socket ${socket.id} joined ${roomName}`);
+        });
+
+        // Direct typing events (optional, can also be done via API)
+        socket.on('typing', (data) => {
+            if (data.ticketId) {
+                socket.to(`ticket-${data.ticketId}`).emit('user_typing', data);
+            }
         });
 
         socket.on('disconnect', () => {
-            console.log('Client disconnected:', socket.id);
+            // console.log('Socket disconnected:', socket.id);
         });
     });
 
@@ -150,11 +161,13 @@ app.prepare().then(async () => {
     // Handle server shutdown
     process.on('SIGTERM', () => {
         if (cleanupCron) cleanupCron();
+        io.close(); // Close socket server
         httpServer.close();
     });
 
     process.on('SIGINT', () => {
         if (cleanupCron) cleanupCron();
+        io.close(); // Close socket server
         httpServer.close();
         process.exit(0);
     });

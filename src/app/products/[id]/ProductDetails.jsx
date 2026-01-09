@@ -269,7 +269,7 @@ export default function ProductDetails({ product, relatedProducts = [], isDashbo
                 onClick={() => router.push('/user-dashboard/subscription')}
                 className="flex-1 bg-[#C0934B] text-white py-3 rounded-[5px] font-bold hover:bg-[#a37c3f] transition-colors"
               >
-                View Article
+                Start Reading
               </button>
             ) : isAddedToCart ? (
               <button

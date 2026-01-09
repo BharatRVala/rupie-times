@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
+import { sendAdvertiseEmail } from '@/app/lib/utils/resend';
 
 export async function POST(req) {
     try {
@@ -14,37 +14,8 @@ export async function POST(req) {
             );
         }
 
-        // Configure SMTP Transporter
-        // using credentials provided by user
-        const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 587,
-            secure: false, // true for 465, false for other ports
-            auth: {
-                user: "aghorimediahouse@gmail.com",
-                pass: "mtts nruc rvdu wmgm",
-            },
-        });
-
-        // Email Content
-        const mailOptions = {
-            from: '"Rupie Times Advertiser" <aghorimediahouse@gmail.com>', // sender address
-            to: "aghorimediahouse@gmail.com", // list of receivers
-            replyTo: workEmail,
-            subject: `New Advertise Inquiry: ${companyName || firstName} - ${interest}`,
-            html: `
-                <h2>New Advertising Inquiry</h2>
-                <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-                <p><strong>Company:</strong> ${companyName || 'N/A'}</p>
-                <p><strong>Email:</strong> ${workEmail}</p>
-                <p><strong>Interest:</strong> ${interest}</p>
-                <br/>
-                <p>Sent from Rupie Times Advertise With Us Page.</p>
-            `,
-        };
-
-        // Send Email
-        await transporter.sendMail(mailOptions);
+        // Send Email using shared utility
+        await sendAdvertiseEmail(body);
 
         return NextResponse.json(
             { success: true, message: 'Inquiry sent successfully' },

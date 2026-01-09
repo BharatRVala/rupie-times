@@ -34,6 +34,7 @@ export default function AdvertisementManagementPage() {
     // Client-side States
     const [allAdvertisements, setAllAdvertisements] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeTab, setActiveTab] = useState("all"); // 'all', 'active', 'inactive'
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -50,13 +51,17 @@ export default function AdvertisementManagementPage() {
     const fetchAdvertisements = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await fetch('/api/admin/advertisements?limit=1000');
             const data = await response.json();
             if (data.success) {
                 setAllAdvertisements(data.data);
+            } else {
+                setError(data.message || "Failed to load advertisements");
             }
         } catch (error) {
             console.error("Failed to fetch advertisements", error);
+            setError("Failed to connect to server");
         } finally {
             setLoading(false);
         }
@@ -326,7 +331,21 @@ export default function AdvertisementManagementPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {visibleAdvertisements.length === 0 ? (
+                            {error ? (
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-8 text-center text-red-500">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <span>{error}</span>
+                                            <button
+                                                onClick={fetchAdvertisements}
+                                                className="text-sm text-[#C0934B] hover:underline"
+                                            >
+                                                Try Again
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : visibleAdvertisements.length === 0 ? (
                                 <tr>
                                     <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                                         {searchQuery ? "No matching advertisements found." : "No advertisements found."}

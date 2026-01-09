@@ -100,10 +100,7 @@ const ProductArticleSchema = new mongoose.Schema({
   issueEndDate: {
     type: Date
   },
-  isFreeTrial: {
-    type: Boolean,
-    default: false
-  },
+
   createdAt: {
     type: Date,
     default: Date.now

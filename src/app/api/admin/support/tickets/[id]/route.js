@@ -113,9 +113,10 @@ export async function POST(request, { params }) {
       .populate('assignedTo', 'name email')
       .populate('messages.user', 'name email');
 
-    // Emit Socket.IO event for real-time message
-    if (global.io) {
+    // Emit Socket.io event for real-time message
+    try {
       const lastMessage = updatedTicket.messages[updatedTicket.messages.length - 1];
+      // Serialize to ensure ObjectIds are strings and structure is clean JSON
       const cleanMessage = JSON.parse(JSON.stringify(lastMessage));
 
       const eventPayload = {
@@ -123,7 +124,11 @@ export async function POST(request, { params }) {
         user: cleanMessage.user || { name: 'Admin', email: authResult.email }
       };
 
-      global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
+      if (global.io) {
+        global.io.to(`ticket-${id}`).emit('receive_message', eventPayload);
+      }
+    } catch (socketError) {
+      console.error('Socket Emit Error:', socketError);
     }
 
     return NextResponse.json({
@@ -176,9 +181,13 @@ export async function PUT(request, { params }) {
       authResult.email
     );
 
-    // Emit Socket.IO event for real-time update
-    if (global.io) {
-      global.io.to(`ticket-${id}`).emit('status_changed', 'open');
+    // Emit Socket.io event for real-time update
+    try {
+      if (global.io) {
+        global.io.to(`ticket-${id}`).emit('status_changed', 'open');
+      }
+    } catch (socketError) {
+      console.error('Socket Emit Error:', socketError);
     }
 
     // Add system message about assignment
@@ -272,9 +281,13 @@ export async function PATCH(request, { params }) {
 
     await ticket.save();
 
-    // Emit Socket.IO event for real-time update
-    if (global.io) {
-      global.io.to(`ticket-${id}`).emit('status_changed', status);
+    // Emit Socket.io event for real-time update
+    try {
+      if (global.io) {
+        global.io.to(`ticket-${id}`).emit('status_changed', status);
+      }
+    } catch (socketError) {
+      console.error('Socket Emit Error:', socketError);
     }
 
     const updatedTicket = await SupportTicket.findById(id)

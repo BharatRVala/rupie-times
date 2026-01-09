@@ -12,13 +12,25 @@ const LatestNews = () => {
         const fetchNews = async () => {
             try {
                 setLoading(true);
-                const response = await fetch('/api/user/news?limit=5&sortBy=isImportant');
+                // Fetch latest 5 news (sorted by createdAt desc by default/explicitly)
+                const response = await fetch('/api/user/news?limit=5&sortBy=createdAt');
                 const data = await response.json();
 
+                let articles = [];
                 if (data.success && Array.isArray(data.articles)) {
-                    setNews(data.articles);
+                    articles = data.articles;
                 } else if (data.success && Array.isArray(data.data)) {
-                    setNews(data.data);
+                    articles = data.data;
+                }
+
+                if (articles.length > 0) {
+                    // Fisher-Yates Shuffle to randomize position
+                    const shuffled = [...articles];
+                    for (let i = shuffled.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                    }
+                    setNews(shuffled);
                 }
             } catch (err) {
                 console.error("Failed to fetch news:", err);

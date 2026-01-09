@@ -8,7 +8,7 @@ import Payment from '@/app/lib/models/Payment';
 import User from '@/app/lib/models/User';
 import { authenticateUser } from '@/app/lib/middleware/auth';
 import { SubscriptionNotifier } from '@/app/lib/utils/subscriptionNotifier';
-import { sendEmail, generateEmailTemplate } from '@/app/lib/utils/resend';
+import { sendEmail, generateEmailTemplate, SOCIAL_ATTACHMENTS } from '@/app/lib/utils/resend';
 // import { Resend } from 'resend';
 import { renderToBuffer } from '@react-pdf/renderer';
 import InvoicePDF from '@/app/components/invoice/InvoicePDF';
@@ -189,7 +189,8 @@ const sendInvoiceEmail = async (payment, user, cartItems, options = {}) => {
           filename: `Invoice_${pdfData.orderId}.pdf`,
           content: pdfBuffer,
           contentType: 'application/pdf'
-        }
+        },
+        ...SOCIAL_ATTACHMENTS
       ]
     });
 
@@ -590,25 +591,25 @@ export async function POST(req) {
     try {
       if (payment) {
         emailAttempted = true;
+        // console.log('📧 Attempting to send automatic invoice email to:', authResult.email);
 
-        // 🔥 FIRE AND FORGET: Send email in background to prevent request timeout/hang
-        // We do NOT await this.
-        sendInvoiceEmail(payment, user, cartItems, {
+        // Pass the FULL payment object and original cartItems to ensure all data is present
+        // ✅ PASS EXPLICIT FINANCIAL DETAILS AND SUBSCRIPTION DETAILS
+        // ✅ PASS FULL USER OBJECT (with mobile)
+        await sendInvoiceEmail(payment, user, cartItems, {
           subtotal: calculatedTotalAmount,
           discountAmount: discountAmount,
-          subscriptionDetails: subscriptionDetails
-        })
-          .then(() => console.log('✅ Automatic invoice email sent successfully'))
-          .catch(err => console.error('❌ AUTOMATIC INVOICE EMAIL FAILED (Background):', err));
-
-        // We mark as "queued" or similar for the response since we aren't waiting
-        emailSent = true; // Optimistic flag for UI feedback if needed, or clarify in response
+          subscriptionDetails: subscriptionDetails // ✅ Pass details with dates
+        });
+        emailSent = true;
+        // console.log('✅ Automatic invoice email sent successfully');
       } else {
         console.warn('⚠️ No payment record found for email sending');
       }
-    } catch (error) {
-      console.error('❌ Error initiating background email:', error);
-      // Non-blocking error
+    } catch (error) { // ✅ FIXED: Changed variable name to avoid conflict
+      console.error('❌ AUTOMATIC INVOICE EMAIL FAILED:', error);
+      emailError = error.message; // ✅ FIXED: Use the caught error
+      // Log this failure for monitoring but don't fail the transaction
     }
 
     // 10. Commit transaction

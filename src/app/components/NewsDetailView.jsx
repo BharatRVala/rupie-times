@@ -30,13 +30,45 @@ const getImageUrl = (item) => {
   return '/placeholder.png';
 };
 
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
+
 const NewsDetailView = ({ newsItem, onBack, allNews, loading, onSelectNews }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
   const [imageErrors, setImageErrors] = useState({});
 
-  // Sidebar Filtering (Everything except current)
-  const sidebarNews = allNews ? allNews.filter(n => n._id !== newsItem?._id).slice(0, 10) : [];
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Filter States for Sidebar (Synced with URL)
+  const currentCategory = searchParams.get('cat') || "All";
+
+  // Handle Category Change
+  const handleCategoryChange = (newCat) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newCat === "All") {
+      params.delete('cat');
+    } else {
+      params.set('cat', newCat);
+    }
+    // Update URL without scrolling
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  // Extract categories for sidebar
+  const categories = React.useMemo(() => {
+    if (!allNews) return ["All"];
+    const unique = [...new Set(allNews.map(item => item.category).filter(Boolean))];
+    return ["All", ...unique.sort()];
+  }, [allNews]);
+
+  // Sidebar Filtering (Everything except current, filtered by category)
+  const sidebarNews = allNews ? allNews.filter(n => {
+    if (n._id === newsItem?._id) return false;
+    if (currentCategory !== "All" && n.category !== currentCategory) return false;
+    return true;
+  }) : [];
 
   const handleImageError = (imageId) => {
     setImageErrors(prev => ({ ...prev, [imageId]: true }));
@@ -123,7 +155,7 @@ const NewsDetailView = ({ newsItem, onBack, allNews, loading, onSelectNews }) =>
       case 'editor':
         return (
           <div
-            className="mb-6 rich-text-content"
+            className="mb-6 rich-text-content w-full overflow-x-auto custom-scrollbar"
             dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }}
           />
         );
@@ -413,7 +445,29 @@ const NewsDetailView = ({ newsItem, onBack, allNews, loading, onSelectNews }) =>
                 <button onClick={() => setIsSidebarOpen(false)}><FaTimes className="w-6 h-6" /></button>
               </div>
 
-              <h2 className="text-2xl font-bold mb-6 hidden lg:block">More News</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold hidden lg:block">More News</h2>
+
+                {/* Sidebar Category Filter */}
+                <div className="relative">
+                  <select
+                    value={currentCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="bg-white border border-gray-200 text-sm font-semibold text-[#1E4032] rounded-lg px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-[#1E4032] appearance-none cursor-pointer hover:bg-gray-50"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+                      backgroundPosition: 'right 0.5rem center',
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '1.5em 1.5em'
+                    }}
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
 
               <div className="space-y-4">
                 {sidebarNews.length > 0 ? (
@@ -445,7 +499,7 @@ const NewsDetailView = ({ newsItem, onBack, allNews, loading, onSelectNews }) =>
                       <FaInbox className="w-6 h-6 text-gray-400" />
                     </div>
                     <p className="text-sm font-bold text-gray-600">No other news found</p>
-                    <p className="text-xs text-gray-500 mt-1 max-w-[200px]">There are no other news items available in this section at the moment.</p>
+                    <p className="text-xs text-gray-500 mt-1 max-w-[200px]">There are no other news items {currentCategory !== 'All' ? `in ${currentCategory}` : ''} available in this section at the moment.</p>
                   </div>
                 )}
               </div>

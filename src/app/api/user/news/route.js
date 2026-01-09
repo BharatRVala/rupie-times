@@ -15,12 +15,17 @@ export async function GET(request) {
         const sortBy = searchParams.get('sortBy') || 'createdAt';
         const sortOrder = searchParams.get('sortOrder') || 'desc';
         const newsType = searchParams.get('newsType');
+        const category = searchParams.get('category');
 
         // Only show active news to users
         const query = { isActive: true };
 
         if (newsType) {
             query.newsType = newsType;
+        }
+
+        if (category) {
+            query.category = category;
         }
 
         const sortConfig = {};

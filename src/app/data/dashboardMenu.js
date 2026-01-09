@@ -10,12 +10,12 @@ export const dashboardMenu = [
         source: "assets",
         path: "/user-dashboard/products",
     },
-    {
-        title: "Trial Newsletters",
-        icon: "product.svg",
-        source: "assets",
-        path: "/user-dashboard/trial-products",
-    },
+    // {
+    //     title: "Trial Newsletters",
+    //     icon: "product.svg",
+    //     source: "assets",
+    //     path: "/user-dashboard/trial-products",
+    // },
     /* {
         title: "Order",
         icon: "cart.svg",

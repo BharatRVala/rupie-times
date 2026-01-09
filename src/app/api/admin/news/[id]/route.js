@@ -54,16 +54,36 @@ export async function PUT(request, { params }) {
         if (mainHeading) updateFields.mainHeading = mainHeading;
         if (description) updateFields.description = description;
         if (category) updateFields.category = category;
-        if (newsType !== undefined) updateFields.newsType = newsType; // Handle empty string/null to clear it
+        if (newsType !== undefined) {
+            // If newsType is empty string, set it to null to avoid enum validation error
+            updateFields.newsType = newsType === "" ? null : newsType;
+        }
         if (sections !== undefined) updateFields.sections = sections;
         if (isActive !== undefined) updateFields.isActive = isActive;
         if (featuredImage !== undefined) updateFields.featuredImage = featuredImage;
 
-        // Handle isImportant exclusivity
+        // Handle isImportant logic (Max 4 active important news)
         if (isImportant !== undefined) {
             if (isImportant === true) {
-                // Unset isImportant for all other news items EXCEPT current one
-                await News.updateMany({ _id: { $ne: id }, isImportant: true }, { $set: { isImportant: false } });
+                // Check currently important count (excluding current article)
+                const currentImportantCount = await News.countDocuments({
+                    _id: { $ne: id },
+                    isImportant: true
+                });
+
+                if (currentImportantCount >= 4) {
+                    // Find the oldest important news to unmark (excluding current)
+                    const oldestImportant = await News.findOne({
+                        _id: { $ne: id },
+                        isImportant: true
+                    })
+                        .sort({ createdAt: 1 })
+                        .select('_id');
+
+                    if (oldestImportant) {
+                        await News.findByIdAndUpdate(oldestImportant._id, { isImportant: false });
+                    }
+                }
             }
             updateFields.isImportant = isImportant;
         }

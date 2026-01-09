@@ -19,10 +19,10 @@ import {
 import { motion } from 'framer-motion';
 import { advertiseData } from '../data/advertiseData';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
-
 const AdvertiseWithUs = () => {
     const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState("idle"); // idle, loading, success, error
+    const [message, setMessage] = useState("");
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -38,6 +38,8 @@ const AdvertiseWithUs = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setStatus("loading");
+        setMessage("");
 
         try {
             const res = await fetch('/api/advertise', {
@@ -48,7 +50,8 @@ const AdvertiseWithUs = () => {
             const data = await res.json();
 
             if (data.success) {
-                toast.success('Inquiry sent successfully! We will contact you soon.');
+                setStatus("success");
+                setMessage("Inquiry sent successfully! We will contact you soon.");
                 setFormData({
                     firstName: '',
                     lastName: '',
@@ -57,11 +60,13 @@ const AdvertiseWithUs = () => {
                     interest: 'Display Advertising'
                 });
             } else {
-                toast.error(data.message || 'Failed to send inquiry.');
+                setStatus("error");
+                setMessage(data.message || 'Failed to send inquiry.');
             }
         } catch (error) {
             console.error('Submit error:', error);
-            toast.error('Something went wrong. Please try again.');
+            setStatus("error");
+            setMessage('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -310,6 +315,13 @@ const AdvertiseWithUs = () => {
                                         <option value="Custom Partnership">Custom Partnership</option>
                                     </select>
                                 </div>
+
+                                {message && (
+                                    <div className={`p-4 rounded-lg ${status === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                                        {message}
+                                    </div>
+                                )}
+
                                 <button
                                     type="submit"
                                     disabled={loading}

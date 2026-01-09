@@ -10,11 +10,18 @@ export default function HomeHero() {
     top: null,
     left: null,
     right: null,
-    center: null,
     bottom: []
   });
+  // 'slides' contains the actual items causing data.
+  const [slides, setSlides] = useState([]);
+  // 'renderSlides' contains clones for seamless looping: [Item1, Item2, Item3, Item4, Item1(clone)]
+  const [renderSlides, setRenderSlides] = useState([]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(true);
   const [loading, setLoading] = useState(true);
+
   const sliderRef = useRef(null);
+  const intervalRef = useRef(null);
 
   const scrollLeft = () => {
     if (sliderRef.current) {
@@ -41,43 +48,164 @@ export default function HomeHero() {
     }
   };
 
-  // Fetch advertisements
+  // Fetch advertisements and category news
   useEffect(() => {
-    const fetchAds = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const positions = ['top', 'left', 'right', 'center', 'bottom'];
-        const adPromises = positions.map(position =>
-          fetch(`/api/advertisements?position=${position}&limit=${position === 'bottom' ? 4 : 1}`)
+
+        const positions = ['top', 'left', 'right', 'center'];
+        const adPromises = positions.map(position => {
+          const limit = (position === 'center') ? 4 : 1;
+          return fetch(`/api/advertisements?position=${position}&limit=${limit}`)
             .then(res => res.json())
             .then(data => data.success ? data.data : [])
-            .catch(() => [])
-        );
-
-        const results = await Promise.all(adPromises);
-
-        setAds({
-          top: results[0][0] || null,
-          left: results[1][0] || null,
-          right: results[2][0] || null,
-          center: results[3][0] || null,
-          bottom: results[4] || []
+            .catch(() => []);
         });
 
+        // Fetch 4 specific categories
+        const categories = ["Corporate Wire", "Inside IPOs", "Market Snapshot", "Daily Brew"];
+        const categoryPromises = categories.map(cat =>
+          fetch(`/api/user/news?category=${encodeURIComponent(cat)}&limit=1`)
+            .then(res => res.json())
+            .then(data => data.success && data.articles.length > 0 ? { ...data.articles[0], customCategoryTitle: cat } : { customCategoryTitle: cat, isPlaceholder: true })
+            .catch(() => ({ customCategoryTitle: cat, isPlaceholder: true }))
+        );
+
+        const [adResults, categoryNewsResults] = await Promise.all([
+          Promise.all(adPromises),
+          Promise.all(categoryPromises)
+        ]);
+
+        const topAd = adResults[0][0] || null;
+        const leftAd = adResults[1][0] || null;
+        const rightAd = adResults[2][0] || null;
+        const centerAds = adResults[3] || [];
+
+        let importantNewsItems = [];
+        try {
+          const newsRes = await fetch('/api/user/news?limit=4&sortBy=isImportant');
+          const newsData = await newsRes.json();
+          if (newsData.success) {
+            const items = Array.isArray(newsData.articles) ? newsData.articles : (Array.isArray(newsData.data) ? newsData.data : []);
+            importantNewsItems = items.slice(0, 4);
+          }
+        } catch (err) {
+          console.error("Failed to fetch important news:", err);
+        }
+
+        // Logic: If Center Ads exist (even 1), usage ONLY Ads.
+        // Otherwise, use Important News.
+        let selectedSlides = [];
+        if (centerAds.length > 0) {
+          selectedSlides = centerAds.slice(0, 4).map(ad => ({ ...ad, type: 'ad' }));
+        } else {
+          selectedSlides = importantNewsItems.map(news => ({ ...news, type: 'news' }));
+        }
+
+        setAds({
+          top: topAd,
+          left: leftAd,
+          right: rightAd,
+          bottom: categoryNewsResults // Now holds category news items
+        });
+
+        setSlides(selectedSlides);
+
+        // Prepare Render Slides (with Clone) if more than 1 item
+        if (selectedSlides.length > 1) {
+          setRenderSlides([...selectedSlides, selectedSlides[0]]);
+        } else {
+          setRenderSlides(selectedSlides);
+        }
+
       } catch (err) {
-        console.error('Fetch ads error:', err);
+        console.error('Fetch data error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAds();
+    fetchData();
   }, []);
+
+  // Handle Rotation Logic
+  const nextSlide = () => {
+    if (renderSlides.length <= 1) return;
+    setIsTransitioning(true);
+    setCurrentSlide(prev => prev + 1);
+  };
+
+  const prevSlide = () => {
+    if (renderSlides.length <= 1) return;
+    setIsTransitioning(true);
+    setCurrentSlide(prev => {
+      if (prev === 0) return renderSlides.length - 2; // Jump to last real slide
+      return prev - 1;
+    });
+  };
+
+  // Jump Handle for Infinite Scroll
+  useEffect(() => {
+    if (renderSlides.length <= 1) return;
+
+    // If we moved to the clone (last index), reset to index 0 smoothly
+    if (currentSlide === renderSlides.length - 1) {
+      const timeout = setTimeout(() => {
+        setIsTransitioning(false);
+        setCurrentSlide(0);
+      }, 500); // Match transition duration
+      return () => clearTimeout(timeout);
+    }
+  }, [currentSlide, renderSlides.length]);
+
+  // Auto-rotate
+  useEffect(() => {
+    if (renderSlides.length <= 1) return;
+
+    intervalRef.current = setInterval(() => {
+      nextSlide();
+    }, 5000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [renderSlides.length]); // Dependencies mostly static properly
+
+  // Pause on hover (clearing interval)
+  const pauseAutoRun = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  };
+  const resumeAutoRun = () => {
+    if (renderSlides.length <= 1) return;
+    pauseAutoRun(); // ensure no double interval
+    intervalRef.current = setInterval(nextSlide, 5000);
+  };
+
 
   const getImageUrl = (ad) => {
     if (!ad) return "";
     return ad.imageUrl || `/api/advertisements/image/${ad.imageFilename}`;
   };
+
+  const getNewsImageUrl = (item) => {
+    if (!item) return '/placeholder.png';
+    const imagePath = '/api/admin/news/image/';
+    const img = item.featuredImage || item.thumbnail || item.image;
+
+    if (!img) {
+      return (item.sections?.find(s => s.type === 'image')?.content?.image) || '/placeholder.png';
+    }
+
+    if (typeof img === 'string') {
+      if (img.startsWith('http')) return img;
+      return `${imagePath}${img}`;
+    }
+    if (img.filename) {
+      return `${imagePath}${img.filename}`;
+    }
+    return '/placeholder.png';
+  };
+
+
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-5 md:px-6 lg:px-8 py-6">
@@ -133,38 +261,127 @@ export default function HomeHero() {
             {/* ---------- CENTER HERO IMAGE WITH FLOATING TEXT ---------- */}
             {/* Mobile: Order 1, Col Span 2 (Full Width). Desktop: Order 2, Col Span 8. */}
             <div className="col-span-2 order-1 lg:col-span-8 lg:order-2">
-              <div className="relative w-full rounded-xl overflow-hidden">
+              <div className="relative w-full rounded-xl overflow-hidden min-h-[400px]">
+                {slides.length > 0 ? (
+                  <div
+                    className="relative w-full h-full group"
+                    onMouseEnter={pauseAutoRun}
+                    onMouseLeave={resumeAutoRun}
+                  >
+                    {/* SLIDER TRACK */}
+                    <div className="w-full h-full overflow-hidden rounded-xl">
+                      <div
+                        className={`flex h-full ${isTransitioning ? 'transition-transform duration-500 ease-in-out' : ''}`}
+                        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                      >
+                        {renderSlides.map((item, index) => (
+                          <div key={index} className="w-full h-full flex-shrink-0 relative">
+                            {item.type === 'ad' ? (
+                              // RENDER AD
+                              <div className="relative w-full h-full">
+                                <a href={item.link || '#'} target="_blank" onClick={() => trackClick(item._id)} className="block w-full h-full relative">
+                                  <Image
+                                    src={getImageUrl(item)}
+                                    alt={item.name || "Main News Highlight"}
+                                    width={1200}
+                                    height={600}
+                                    className="w-full h-full object-contain"
+                                    priority={index === currentSlide}
+                                  />
+                                  {(item.title || item.description) && (
+                                    <div className="absolute left-0 right-0 bottom-16 md:bottom-20 p-4 md:p-6 bg-black/50 backdrop-blur-sm text-white mx-4 rounded-lg">
+                                      {item.title && (
+                                        <h2 className="text-lg md:text-xl font-semibold leading-snug">
+                                          {item.title}
+                                        </h2>
+                                      )}
+                                      {item.description && (
+                                        <p className="text-sm md:text-base mt-2 opacity-90">
+                                          {item.description}
+                                        </p>
+                                      )}
+                                    </div>
+                                  )}
+                                </a>
+                              </div>
+                            ) : (
+                              // RENDER NEWS
+                              <div className="relative w-full h-full flex flex-col">
+                                <div className="relative w-full h-[400px] md:h-[500px] mb-4 overflow-hidden rounded-xl flex-shrink-0">
+                                  <Image
+                                    src={getNewsImageUrl(item)}
+                                    alt={item.title || "News Image"}
+                                    fill
+                                    className="object-cover w-full h-full"
+                                    priority={index === currentSlide}
+                                  />
+                                  <div className="absolute top-4 left-4">
+                                    <span className="bg-[#12b981] text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+                                      {item.category?.name || "News"}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-3 p-2">
+                                  <a href={`/news/${item._id || item.id}`}>
+                                    <h1 className="text-2xl md:text-4xl font-bold text-gray-900 leading-tight hover:text-[#00301F] transition-colors">
+                                      {item.mainHeading || item.title}
+                                    </h1>
+                                  </a>
+                                  <p className="text-gray-600 text-base md:text-lg line-clamp-3">
+                                    {item.description}
+                                  </p>
+                                  <div className="mt-2">
+                                    <a href={`/news/${item._id || item.id}`} className="inline-flex items-center justify-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-md text-white bg-[#00301F] hover:bg-[#002015] transition-colors shadow-sm">
+                                      Read news
+                                    </a>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Hero Image (auto height, no limitation) */}
-                {ads.center ? (
-                  <a href={ads.center.link || '#'} target="_blank" onClick={() => trackClick(ads.center._id)} className="block w-full relative">
-                    <Image
-                      src={getImageUrl(ads.center)}
-                      alt={ads.center.name || "Main News Highlight"}
-                      width={1200}
-                      height={600}
-                      className="w-full h-auto object-contain rounded-xl"
-                      priority
-                    />
-
-                    {/* FLOATING ARTICLE TEXT */}
-                    {(ads.center.title || ads.center.description) && (
-                      <div className="absolute left-0 right-0 bottom-4 md:bottom-6 p-4 md:p-6 bg-black/50 backdrop-blur-sm text-white mx-4 rounded-lg">
-                        {ads.center.title && (
-                          <h2 className="text-lg md:text-xl font-semibold leading-snug">
-                            {ads.center.title}
-                          </h2>
-                        )}
-
-                        {ads.center.description && (
-                          <p className="text-sm md:text-base mt-2 opacity-90">
-                            {ads.center.description}
-                          </p>
-                        )}
+                    {/* DOTS INDICATOR (Absolute Bottom) */}
+                    {slides.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-20 p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                        {slides.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setIsTransitioning(true);
+                              setCurrentSlide(idx);
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${((currentSlide % slides.length) === idx) ? 'bg-white w-4' : 'bg-white/50'}`}
+                          />
+                        ))}
                       </div>
                     )}
-                  </a>
-                ) : null}
+
+                    {/* PREV/NEXT ARROWS section - Fixed Position Overlay */}
+                    {slides.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevSlide}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20 cursor-pointer shadow-lg active:scale-95"
+                        >
+                          <ChevronLeft className="w-6 h-6" />
+                        </button>
+                        <button
+                          onClick={nextSlide}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all z-20 cursor-pointer shadow-lg active:scale-95"
+                        >
+                          <ChevronRight className="w-6 h-6" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-64 flex items-center justify-center bg-gray-100 rounded-xl text-gray-400">
+                    No featured content
+                  </div>
+                )}
               </div>
             </div>
 
@@ -185,54 +402,49 @@ export default function HomeHero() {
 
           </div>
 
-          {/* ---------- Bottom Article Cards (Slider on Mobile/Tablet) ---------- */}
+          {/* ---------- Bottom Category News Grid ---------- */}
           <div className="mt-8 relative group">
 
-            {/* Slider Container */}
+            {/* Grid Container */}
             <div
-              ref={sliderRef}
-              className="flex lg:grid lg:grid-cols-4 gap-4 overflow-x-auto snap-x scrollbar-hide pb-4 lg:pb-0"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
             >
-              {ads.bottom.map((ad, i) => (
+              {ads.bottom.map((item, i) => (
                 <div
-                  key={ad._id || i}
-                  className="min-w-[85%] sm:min-w-[45%] lg:min-w-0 snap-center flex-shrink-0 backdrop-blur supports-[backdrop-filter]:bg-[#E6E6E6]/10 bg-[#E6E6E6]/10 rounded-lg p-3 shadow-sm hover:shadow-md transition"
+                  key={item._id || i}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-100 flex flex-col"
                 >
-                  <a href={ad.link || '#'} target="_blank" onClick={() => trackClick(ad._id)} className="block h-full">
-                    <div className="relative w-full h-32 mb-3">
-                      <Image
-                        src={getImageUrl(ad)}
-                        alt={ad.name || "News Card"}
-                        fill
-                        className="object-cover rounded-md"
-                      />
-                    </div>
+                  <div className="p-4 border-b border-gray-50 bg-gray-50/50">
+                    <h3 className="font-bold text-[#1E4032] text-lg truncate">
+                      {item.customCategoryTitle}
+                    </h3>
+                  </div>
 
-                    <h4 className="text-sm font-semibold truncate">
-                      {ad.title || ad.name}
-                    </h4>
-                  </a>
+                  {!item.isPlaceholder ? (
+                    <a href={`/news/${item._id}?cat=${encodeURIComponent(item.customCategoryTitle || item.category)}`} className="block relative w-full aspect-[4/3] group">
+                      <div className="relative w-full h-full overflow-hidden">
+                        <Image
+                          src={getNewsImageUrl(item)}
+                          alt={item.mainHeading || "News Image"}
+                          fill
+                          className="object-cover transition-transform duration-500"
+                        />
+                      </div>
+                      {/* Optional overlay title on hover or always */}
+                      <div className="p-3">
+                        <h4 className="text-sm font-medium text-gray-800 line-clamp-2 leading-snug group-hover:text-[#C0934B] transition-colors">
+                          {item.mainHeading}
+                        </h4>
+                      </div>
+                    </a>
+                  ) : (
+                    <div className="w-full aspect-[4/3] flex items-center justify-center bg-gray-100 text-gray-400 text-sm">
+                      No articles found
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-
-            {/* Navigation Buttons (Hidden on Desktop) */}
-            {!loading && ads.bottom.length > 0 && (
-              <div className="flex justify-center gap-4 mt-4 lg:hidden">
-                <button
-                  onClick={scrollLeft}
-                  className="p-2 rounded-full bg-gray-200/50 hover:bg-gray-300/50 transition"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={scrollRight}
-                  className="p-2 rounded-full bg-gray-200/50 hover:bg-gray-300/50 transition"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
 
           </div>
         </>

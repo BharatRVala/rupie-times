@@ -328,7 +328,7 @@ const ArticleView = ({
       case 'editor':
       case 'rich_text':
         return (
-          <div className="mb-4 text-base w-full max-w-none break-words overflow-x-auto rich-text-content" style={{ color: 'inherit' }} dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }} />
+          <div className="mb-4 text-base w-full max-w-none break-words overflow-x-auto rich-text-content custom-scrollbar" style={{ color: 'inherit' }} dangerouslySetInnerHTML={{ __html: typeof block.content === 'string' ? block.content : '' }} />
         );
       case 'image':
         const imageId = `image-${blockId}`;

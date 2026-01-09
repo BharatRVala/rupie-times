@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { name: "Our Products", href: "/products" },
   { name: "About Us", href: "/about" },
   { name: "Contact Us", href: "/contact-us" },
-  { name: "Trial Products", href: "/user-dashboard/trial-products" }, // Should be in menu or just button? Added here just in case? No user didn't ask.
+  { name: "Trial", href: "/trial" },
 ];
 // Removing Trial Products from NAV_ITEMS if not needed there.
 
@@ -269,20 +269,12 @@ export default function Navbar({ settings }) {
             )}
 
             {/* Take a Trial Button */}
-            <button
-              onClick={() => {
-                if (isLoggedIn) {
-                  router.push('/user-dashboard/trial-products?activate_trial=true');
-                } else {
-                  // Redirect to auth with return url including the activation param
-                  const redirectUrl = encodeURIComponent('/user-dashboard/trial-products?activate_trial=true');
-                  router.push(`/auth?redirect=${redirectUrl}`);
-                }
-              }}
+            <Link
+              href="/trial"
               className="inline-flex rounded-[5px] bg-transparent border border-[#1E4032] px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-[#1E4032] shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1E4032] transition whitespace-nowrap"
             >
               Trial
-            </button>
+            </Link>
           </div>
 
           {/* Desktop Layout: Logo -> Navigation Menu -> Icons -> Take a Trial */}
@@ -400,19 +392,12 @@ export default function Navbar({ settings }) {
                 </Link>
               )}
 
-              <button
-                onClick={() => {
-                  if (isLoggedIn) {
-                    router.push('/user-dashboard/trial-products?activate_trial=true');
-                  } else {
-                    const redirectUrl = encodeURIComponent('/user-dashboard/trial-products?activate_trial=true');
-                    router.push(`/auth?redirect=${redirectUrl}`);
-                  }
-                }}
+              <Link
+                href="/trial"
                 className="inline-flex rounded-md bg-transparent border border-primary px-3.5 py-2 text-sm font-semibold text-primary shadow-sm hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition"
               >
                 Trial
-              </button>
+              </Link>
             </div>
           </div>
         </nav>

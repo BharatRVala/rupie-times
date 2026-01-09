@@ -269,13 +269,10 @@ export async function getArticleByIdService({ id, user = null, mode = 'full' }) 
 
     const [article, userData, dbProgress] = await Promise.all([articlePromise, userPromise, progressPromise]);
 
-    console.log(`[DEBUG] getArticleByIdService query result for ${id}:`, article ? Object.keys(article) : 'null');
-    if (article) {
-        console.log(`[DEBUG] Article info: isActive=${article.isActive}, accessType=${article.accessType}`);
-    }
+
 
     if (!article || !article.isActive) {
-        console.log(`[DEBUG] Article not found or inactive. Article: ${!!article}, IsActive: ${article?.isActive}`);
+
         return { success: false, error: 'Article not found or unavailable', status: 404 };
     }
 

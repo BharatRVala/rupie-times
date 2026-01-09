@@ -73,7 +73,7 @@ const YouMayLike = () => {
     <section className="mx-auto max-w-7xl px-4 sm:px-5 md:px-6 lg:px-8 py-12 font-sans">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-black">You May Like</h2>
+        <h2 className="text-3xl font-bold text-black">You may also like</h2>
         <Link href="/news" className="flex items-center text-sm font-medium text-gray-600 hover:text-black transition-colors cursor-pointer group">
           View more <FaArrowRight className="ml-2 w-3 h-3 group-hover:text-black transition-colors" />
         </Link>

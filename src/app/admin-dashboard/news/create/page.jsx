@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -20,6 +20,27 @@ export default function CreateNewsPage() {
     const [imagePreview, setImagePreview] = useState(null);
     const [isDragging, setIsDragging] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Category Management
+    const [availableCategories, setAvailableCategories] = useState([]);
+    const [isCustomCategory, setIsCustomCategory] = useState(false);
+
+    // Fetch existing categories from API on mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch('/api/admin/news/categories');
+                const data = await response.json();
+                if (data.success && Array.isArray(data.categories)) {
+                    setAvailableCategories(data.categories);
+                }
+            } catch (error) {
+                console.error("Failed to fetch available categories:", error);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     // Handle input changes
     const handleInputChange = (e) => {
@@ -243,15 +264,75 @@ export default function CreateNewsPage() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Category
                         </label>
-                        <input
-                            type="text"
-                            name="category"
-                            value={formData.category}
-                            onChange={handleInputChange}
-                            placeholder="Enter your Category ...."
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C0934B] focus:border-transparent"
-                            required
-                        />
+                        {!isCustomCategory ? (
+                            <div className="relative">
+                                <select
+                                    name="category"
+                                    value={formData.category}
+                                    onChange={(e) => {
+                                        if (e.target.value === 'custom_option_create_new') {
+                                            setIsCustomCategory(true);
+                                            setFormData(prev => ({ ...prev, category: '' }));
+                                        } else {
+                                            handleInputChange(e);
+                                        }
+                                    }}
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C0934B] focus:border-transparent appearance-none bg-white"
+                                    required
+                                >
+                                    <option value="">Select Category</option>
+                                    {availableCategories.map((cat, idx) => (
+                                        <option key={idx} value={cat}>{cat}</option>
+                                    ))}
+                                    <option value="custom_option_create_new" className="font-bold text-[#C0934B]">+ Create New Category</option>
+                                </select>
+                                <svg
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        name="category"
+                                        value={formData.category}
+                                        onChange={handleInputChange}
+                                        placeholder="Type new category..."
+                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C0934B] focus:border-transparent animate-fade-in"
+                                        autoFocus
+                                    />
+                                    <button
+                                        onClick={() => {
+                                            if (formData.category.trim()) {
+                                                setAvailableCategories(prev => [...prev, formData.category.trim()]);
+                                                setIsCustomCategory(false);
+                                            }
+                                        }}
+                                        className="min-w-fit px-4 py-2 text-sm bg-[#C0934B] text-white rounded-lg hover:bg-[#A87F3D] transition-colors font-medium"
+                                        type="button"
+                                    >
+                                        Add
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setIsCustomCategory(false);
+                                            setFormData(prev => ({ ...prev, category: '' }));
+                                        }}
+                                        className="min-w-fit px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50"
+                                        type="button"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                                <p className="text-xs text-gray-500">Click Add to save this category to the list.</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* News Type */}
@@ -340,7 +421,7 @@ export default function CreateNewsPage() {
                                 </svg>
                             </div>
                             <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors">
-                                Important (One item only)
+                                Important (Max 4)
                             </span>
                         </label>
                     </div>
